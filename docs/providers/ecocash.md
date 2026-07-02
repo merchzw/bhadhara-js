@@ -11,15 +11,30 @@ The EcoCash provider exposes the standard Bhadhara payment interface:
 import { createEcoCash } from "bhadhara/ecocash";
 
 const ecocash = createEcoCash({
-  apiKey: process.env.ECOCASH_API_KEY,
+  username: process.env.ECOCASH_USERNAME,
+  password: process.env.ECOCASH_PASSWORD,
   merchantCode: process.env.ECOCASH_MERCHANT,
-  baseUrl: process.env.ECOCASH_BASE_URL,
-  endpoints: {
-    payMerchant: "/payments/merchant",
-    checkStatus: "/payments/status"
-  }
+  merchantPin: process.env.ECOCASH_MERCHANT_PIN,
+  baseUrl: process.env.ECOCASH_BASE_URL
 });
 ```
+
+## Environment variables
+
+| Variable | Description |
+| --- | --- |
+| `ECOCASH_USERNAME` | API username |
+| `ECOCASH_PASSWORD` | API password |
+| `ECOCASH_MERCHANT` | Merchant code |
+| `ECOCASH_MERCHANT_PIN` | Merchant PIN |
+| `ECOCASH_BASE_URL` | Provider base URL |
+
+## Default sandbox endpoints
+
+| Method | Path |
+| --- | --- |
+| `payMerchant` | `/sandbox/payment/v1/transactions/amount/` |
+| `checkStatus` | `/sandbox/payment/v1/transactions/` |
 
 ## Payment payload
 
@@ -28,7 +43,8 @@ await ecocash.payMerchant({
   amount: 10,
   phone: "0771234567",
   reference: "order-123",
-  description: "Example order"
+  description: "Example order",
+  notifyUrl: "https://example.com/notify"
 });
 ```
 
@@ -43,10 +59,21 @@ await ecocash.checkStatus({
 ## Request behavior
 
 - retries transient network and server failures
-- sends authorization and merchant headers automatically
+- sends `Authorization: Basic <base64(username:password)>` automatically
+- sends `merchantCode` and `merchantPin` in the request body
 - generates an idempotency key when one is not supplied
 - normalizes provider response states to `pending`, `success`, or `failed`
 
 ## Endpoint customization
 
-The shipped endpoint values are placeholders. Override them if the provider API uses different routes in your environment.
+Override the default sandbox paths if your environment uses different routes:
+
+```ts
+const ecocash = createEcoCash({
+  // ...
+  endpoints: {
+    payMerchant: "/custom/payment/path/",
+    checkStatus: "/custom/status/path/"
+  }
+});
+```

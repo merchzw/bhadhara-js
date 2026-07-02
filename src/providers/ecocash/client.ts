@@ -9,8 +9,10 @@ export interface EcoCashEndpoints {
 }
 
 export interface CreateEcoCashOptions extends ProviderHttpOptions {
-  apiKey?: string;
+  username?: string;
+  password?: string;
   merchantCode?: string;
+  merchantPin?: string;
   baseUrl?: string;
   endpoints?: Partial<EcoCashEndpoints>;
   idempotencyHeader?: string;
@@ -18,8 +20,10 @@ export interface CreateEcoCashOptions extends ProviderHttpOptions {
 }
 
 export interface ResolvedEcoCashConfig extends ProviderHttpOptions {
-  apiKey: string;
+  username: string;
+  password: string;
   merchantCode: string;
+  merchantPin: string;
   baseUrl: string;
   endpoints: EcoCashEndpoints;
   idempotencyHeader: string;
@@ -27,8 +31,8 @@ export interface ResolvedEcoCashConfig extends ProviderHttpOptions {
 }
 
 const DEFAULT_ENDPOINTS: EcoCashEndpoints = {
-  payMerchant: "/payments/merchant",
-  checkStatus: "/payments/status"
+  payMerchant: "/sandbox/payment/v1/transactions/amount/",
+  checkStatus: "/sandbox/payment/v1/transactions/"
 };
 
 export class EcoCashClient {
@@ -46,9 +50,9 @@ export class EcoCashClient {
   }
 
   public get headers(): Record<string, string> {
+    const token = btoa(`${this.config.username}:${this.config.password}`);
     return {
-      Authorization: `Bearer ${this.config.apiKey}`,
-      "X-Merchant-Code": this.config.merchantCode
+      Authorization: `Basic ${token}`
     };
   }
 
@@ -64,19 +68,33 @@ export class EcoCashClient {
 }
 
 export function resolveEcoCashConfig(options: CreateEcoCashOptions = {}): ResolvedEcoCashConfig {
-  const apiKey = options.apiKey ?? getEnvironmentValue("ECOCASH_API_KEY");
+  const username = options.username ?? getEnvironmentValue("ECOCASH_USERNAME");
+  const password = options.password ?? getEnvironmentValue("ECOCASH_PASSWORD");
   const merchantCode = options.merchantCode ?? getEnvironmentValue("ECOCASH_MERCHANT");
+  const merchantPin = options.merchantPin ?? getEnvironmentValue("ECOCASH_MERCHANT_PIN");
   const baseUrl = options.baseUrl ?? getEnvironmentValue("ECOCASH_BASE_URL");
 
-  if (!apiKey) {
-    throw new ConfigurationError("EcoCash apiKey is required.", {
-      environmentVariable: "ECOCASH_API_KEY"
+  if (!username) {
+    throw new ConfigurationError("EcoCash username is required.", {
+      environmentVariable: "ECOCASH_USERNAME"
+    });
+  }
+
+  if (!password) {
+    throw new ConfigurationError("EcoCash password is required.", {
+      environmentVariable: "ECOCASH_PASSWORD"
     });
   }
 
   if (!merchantCode) {
     throw new ConfigurationError("EcoCash merchantCode is required.", {
       environmentVariable: "ECOCASH_MERCHANT"
+    });
+  }
+
+  if (!merchantPin) {
+    throw new ConfigurationError("EcoCash merchantPin is required.", {
+      environmentVariable: "ECOCASH_MERCHANT_PIN"
     });
   }
 
@@ -87,8 +105,10 @@ export function resolveEcoCashConfig(options: CreateEcoCashOptions = {}): Resolv
   }
 
   return {
-    apiKey,
+    username,
+    password,
     merchantCode,
+    merchantPin,
     baseUrl,
     timeoutMs: options.timeoutMs ?? 10_000,
     retries: options.retries ?? 1,

@@ -7,6 +7,7 @@ export interface PaymentPayload {
   description?: string;
   currency?: string;
   idempotencyKey?: string;
+  notifyUrl?: string;
   metadata?: Record<string, unknown>;
 }
 
