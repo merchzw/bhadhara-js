@@ -12,8 +12,10 @@ npm install bhadhara
 import { createEcoCash } from "bhadhara/ecocash";
 
 const ecocash = createEcoCash({
-  apiKey: process.env.ECOCASH_API_KEY,
+  username: process.env.ECOCASH_USERNAME,
+  password: process.env.ECOCASH_PASSWORD,
   merchantCode: process.env.ECOCASH_MERCHANT,
+  merchantPin: process.env.ECOCASH_MERCHANT_PIN,
   baseUrl: process.env.ECOCASH_BASE_URL
 });
 ```
@@ -27,7 +29,8 @@ const response = await ecocash.payMerchant({
   amount: 25,
   phone: "0771234567",
   reference: "invoice-001",
-  description: "Invoice payment"
+  description: "Invoice payment",
+  notifyUrl: "https://example.com/notify"
 });
 ```
 

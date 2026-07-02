@@ -24,8 +24,10 @@ npm install bhadhara
 import { createEcoCash } from "bhadhara/ecocash";
 
 const ecocash = createEcoCash({
-  apiKey: process.env.ECOCASH_API_KEY,
+  username: process.env.ECOCASH_USERNAME,
+  password: process.env.ECOCASH_PASSWORD,
   merchantCode: process.env.ECOCASH_MERCHANT,
+  merchantPin: process.env.ECOCASH_MERCHANT_PIN,
   baseUrl: process.env.ECOCASH_BASE_URL
 });
 
@@ -33,7 +35,8 @@ const payment = await ecocash.payMerchant({
   amount: 10,
   phone: "0771234567",
   reference: "order-123",
-  description: "T-shirt order"
+  description: "T-shirt order",
+  notifyUrl: "https://example.com/notify"
 });
 
 if (payment.status === "pending") {
@@ -52,16 +55,28 @@ if (payment.status === "pending") {
 
 | Option | Required | Description |
 | --- | --- | --- |
-| `apiKey` | Yes* | Provider API key. Falls back to `ECOCASH_API_KEY`. |
+| `username` | Yes* | API username. Falls back to `ECOCASH_USERNAME`. |
+| `password` | Yes* | API password. Falls back to `ECOCASH_PASSWORD`. |
 | `merchantCode` | Yes* | Merchant identifier. Falls back to `ECOCASH_MERCHANT`. |
+| `merchantPin` | Yes* | Merchant PIN. Falls back to `ECOCASH_MERCHANT_PIN`. |
 | `baseUrl` | Yes* | Provider base URL. Falls back to `ECOCASH_BASE_URL`. |
 | `timeoutMs` | No | Request timeout in milliseconds. |
 | `retries` | No | Retry count for timeout and transient server failures. |
-| `endpoints` | No | Override placeholder `payMerchant` and `checkStatus` paths. |
+| `endpoints` | No | Override default `payMerchant` and `checkStatus` paths. |
 | `idempotencyHeader` | No | Header name used for idempotency protection. |
 | `defaultHeaders` | No | Additional headers sent with every request. |
 
 \* Required either directly or through environment variables.
+
+## Environment variables
+
+| Variable | Description |
+| --- | --- |
+| `ECOCASH_USERNAME` | API username |
+| `ECOCASH_PASSWORD` | API password |
+| `ECOCASH_MERCHANT` | Merchant code |
+| `ECOCASH_MERCHANT_PIN` | Merchant PIN |
+| `ECOCASH_BASE_URL` | Provider base URL |
 
 ## Architecture
 
@@ -76,10 +91,6 @@ External Payment API
 ```
 
 The core layer lives in `src/core`, while each provider is isolated in `src/providers`.
-
-## Important note about endpoints
-
-The default EcoCash endpoint paths are placeholders intended to keep the provider implementation modular. Override them with the actual provider paths for your integration if they differ from the defaults.
 
 ## Documentation
 

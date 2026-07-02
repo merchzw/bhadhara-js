@@ -32,13 +32,15 @@ export async function payMerchant(
       [client.config.idempotencyHeader]: idempotencyKey
     },
     body: {
+      clientCorrelator: idempotencyKey,
+      endUserId: normalizedPhone,
       amount: payload.amount,
-      phone: normalizedPhone,
-      reference: payload.reference,
+      currency: payload.currency ?? "USD",
       description: payload.description,
-      currency: payload.currency,
+      notifyUrl: payload.notifyUrl,
+      referenceCode: payload.reference,
       merchantCode: client.config.merchantCode,
-      metadata: payload.metadata
+      merchantPin: client.config.merchantPin
     }
   });
 
