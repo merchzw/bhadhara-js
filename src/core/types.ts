@@ -21,20 +21,22 @@ export interface PaymentResponse {
   status: PaymentStatus;
   providerReference?: string;
   reference?: string;
+  ecocashReference?: string;
   message?: string;
   raw?: unknown;
 }
 
 export interface RefundPayload {
-  amount: number;
-  reference: string;
-  providerReference?: string;
+  clientCorrelator: string;
+  originalEcocashReference: string;
+  amount?: number;
+  currency?: string;
   reason?: string;
 }
 
 export interface RefundResponse {
   success: boolean;
-  providerReference?: string;
+  ecocashReference?: string;
   message?: string;
   raw?: unknown;
 }

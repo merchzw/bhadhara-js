@@ -1,6 +1,14 @@
-import type { CheckStatusPayload, PaymentPayload, PaymentProvider, PaymentResponse } from "../../core/types.js";
+import type {
+  CheckStatusPayload,
+  PaymentPayload,
+  PaymentProvider,
+  PaymentResponse,
+  RefundPayload,
+  RefundResponse
+} from "../../core/types.js";
 import { checkStatus } from "./methods/checkStatus.js";
 import { payMerchant } from "./methods/payMerchant.js";
+import { refund } from "./methods/refund.js";
 import {
   EcoCashClient,
   type CreateEcoCashOptions,
@@ -16,6 +24,7 @@ export interface EcoCashProvider extends PaymentProvider {
   readonly config: ResolvedEcoCashConfig;
   payMerchant(payload: PaymentPayload): Promise<PaymentResponse>;
   checkStatus(payload: CheckStatusPayload): Promise<PaymentResponse>;
+  refund(payload: RefundPayload): Promise<RefundResponse>;
 }
 
 export function createEcoCash(options: CreateEcoCashOptions = {}): EcoCashProvider {
@@ -30,6 +39,9 @@ export function createEcoCash(options: CreateEcoCashOptions = {}): EcoCashProvid
     },
     checkStatus(payload: CheckStatusPayload) {
       return checkStatus(client, payload);
+    },
+    refund(payload: RefundPayload) {
+      return refund(client, payload);
     }
   });
 }

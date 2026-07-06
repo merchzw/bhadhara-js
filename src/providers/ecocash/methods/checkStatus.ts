@@ -30,6 +30,7 @@ export async function checkStatus(
     payload.providerReference ??
     pickFirstString(record, ["providerReference", "transactionId", "id", "reference"]);
   const reference = payload.reference ?? pickFirstString(record, ["reference", "merchantReference"]);
+  const ecocashReference = pickFirstString(record, ["ecocashReference", "providerReference", "transactionId", "id"]);
   const message = pickFirstString(record, ["message", "description", "detail"]);
 
   return {
@@ -37,6 +38,7 @@ export async function checkStatus(
     status,
     providerReference,
     reference,
+    ecocashReference,
     message,
     raw: response.data
   };
