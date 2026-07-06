@@ -8,6 +8,7 @@ Phase 1 ships the EcoCash provider with:
 
 - `payMerchant`
 - `checkStatus`
+- `refund`
 - normalized errors
 - request retries
 - idempotency key support
@@ -46,6 +47,18 @@ if (payment.status === "pending") {
   });
 
   console.log(latest.status);
+
+  // Refund flow (requires ecocashReference from lookup/checkStatus)
+  if (latest.status === "success" && latest.ecocashReference) {
+    const refund = await ecocash.refund({
+      clientCorrelator: "refund-order-123-1", // new correlator for refund operation
+      originalEcocashReference: latest.ecocashReference,
+      amount: 5, // optional: partial refund
+      currency: "USD" // optional: defaults to USD
+    });
+
+    console.log(refund.success, refund.ecocashReference);
+  }
 }
 ```
 
@@ -62,7 +75,7 @@ if (payment.status === "pending") {
 | `baseUrl` | Yes* | Provider base URL. Falls back to `ECOCASH_BASE_URL`. |
 | `timeoutMs` | No | Request timeout in milliseconds. |
 | `retries` | No | Retry count for timeout and transient server failures. |
-| `endpoints` | No | Override default `payMerchant` and `checkStatus` paths. |
+| `endpoints` | No | Override default `payMerchant`, `checkStatus`, and `refund` paths. |
 | `idempotencyHeader` | No | Header name used for idempotency protection. |
 | `defaultHeaders` | No | Additional headers sent with every request. |
 
@@ -77,6 +90,33 @@ if (payment.status === "pending") {
 | `ECOCASH_MERCHANT` | Merchant code |
 | `ECOCASH_MERCHANT_PIN` | Merchant PIN |
 | `ECOCASH_BASE_URL` | Provider base URL |
+
+> Note: `ECOCASH_API_KEY` is deprecated/removed and should not be used.
+
+## Refund behavior (EcoCash)
+
+Refunds are sent to `POST /transactions/refund/` and require:
+
+- `clientCorrelator` (new correlator for the refund request)
+- `originalEcocashReference` (from prior transaction lookup / `checkStatus` response)
+
+Optional:
+
+- `amount` (partial refund; must be ≤ original amount)
+- `currency` (defaults to `"USD"`)
+
+Practical flow:
+
+1. Initiate payment (`payMerchant`)
+2. Lookup transaction (`checkStatus`)
+3. Read `ecocashReference` from lookup response
+4. Submit `refund` using `originalEcocashReference = ecocashReference`
+
+## Error handling
+
+Bhadhara normalizes provider failures into typed SDK errors (for example authentication vs provider/business-rule failures).
+
+For refunds, a request against a non-eligible transaction (e.g. non-`SUCCESS`) may be rejected by EcoCash with a provider/business error. You should surface provider code/message to callers for handling and retry decisions.
 
 ## Architecture
 
