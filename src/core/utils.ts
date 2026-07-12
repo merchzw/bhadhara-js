@@ -2,7 +2,8 @@ import { ValidationError } from "./errors.js";
 import type {
   CheckStatusPayload,
   PaymentPayload,
-  PaymentStatus
+  PaymentStatus,
+  RefundPayload
 } from "./types.js";
 
 export function assertPaymentPayload(payload: PaymentPayload): void {
@@ -34,8 +35,37 @@ export function assertCheckStatusPayload(payload: CheckStatusPayload): void {
     });
   }
 
-  if (!payload.reference && !payload.providerReference) {
-    throw new ValidationError("A reference or provider reference is required.");
+  if (typeof payload.phone !== "string" || payload.phone.trim().length === 0) {
+    throw new ValidationError("A phone number is required to look up a transaction.");
+  }
+
+  if (typeof payload.clientCorrelator !== "string" || payload.clientCorrelator.trim().length === 0) {
+    throw new ValidationError("clientCorrelator is required to look up a transaction.");
+  }
+}
+
+export function assertRefundPayload(payload: RefundPayload): void {
+  if (!isRecord(payload)) {
+    throw new ValidationError("Refund payload must be an object.", {
+      payload
+    });
+  }
+
+  if (typeof payload.clientCorrelator !== "string" || payload.clientCorrelator.trim().length === 0) {
+    throw new ValidationError("clientCorrelator is required for a refund.");
+  }
+
+  if (
+    typeof payload.originalEcocashReference !== "string" ||
+    payload.originalEcocashReference.trim().length === 0
+  ) {
+    throw new ValidationError(
+      "originalEcocashReference is required for a refund (obtain via checkStatus first)."
+    );
+  }
+
+  if (typeof payload.phone !== "string" || payload.phone.trim().length === 0) {
+    throw new ValidationError("A phone number is required for a refund.");
   }
 }
 

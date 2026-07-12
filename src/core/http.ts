@@ -68,17 +68,19 @@ export class HttpClient {
           continue;
         }
 
+        const statusMessage = extractStatusMessage(data);
+
         if (response.status === 401 || response.status === 403) {
-          throw new AuthenticationError("Provider authentication failed.", {
-            status: response.status,
-            data
-          });
+          throw new AuthenticationError(
+            statusMessage ?? "Provider authentication failed.",
+            { status: response.status, data }
+          );
         }
 
-        throw new ProviderError(`Provider request failed with status ${response.status}.`, {
-          status: response.status,
-          data
-        });
+        throw new ProviderError(
+          statusMessage ?? `Provider request failed with status ${response.status}.`,
+          { status: response.status, data }
+        );
       } catch (error) {
         if (error instanceof AuthenticationError || error instanceof ProviderError) {
           throw error;
@@ -168,4 +170,13 @@ function isRetryableError(error: unknown): boolean {
   }
 
   return error.name === "AbortError" || error.name === "TypeError";
+}
+
+function extractStatusMessage(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) {
+    return undefined;
+  }
+
+  const value = (data as Record<string, unknown>).statusMessage;
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }

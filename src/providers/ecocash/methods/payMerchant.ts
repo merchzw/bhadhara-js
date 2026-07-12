@@ -16,7 +16,7 @@ export async function payMerchant(
   assertPaymentPayload(payload);
 
   const normalizedPhone = normalizeZimbabwePhoneNumber(payload.phone);
-  const idempotencyKey =
+  const clientCorrelator =
     payload.idempotencyKey ??
     createIdempotencyKey({
       provider: "ecocash",
@@ -24,23 +24,41 @@ export async function payMerchant(
       amount: payload.amount,
       phone: normalizedPhone
     });
+  const currency = payload.currency ?? "USD";
+  const description = payload.description ?? payload.reference;
 
   const response = await client.request({
     method: "POST",
     path: client.config.endpoints.payMerchant,
     headers: {
-      [client.config.idempotencyHeader]: idempotencyKey
+      [client.config.idempotencyHeader]: clientCorrelator
     },
     body: {
-      clientCorrelator: idempotencyKey,
-      endUserId: normalizedPhone,
-      amount: payload.amount,
-      currency: payload.currency ?? "USD",
-      description: payload.description,
-      notifyUrl: payload.notifyUrl,
+      clientCorrelator,
+      notifyUrl: payload.notifyUrl ?? "",
       referenceCode: payload.reference,
+      tranType: "MER",
+      endUserId: normalizedPhone,
+      remarks: description,
+      transactionOperationStatus: "Charged",
+      paymentAmount: {
+        charginginformation: {
+          amount: payload.amount,
+          currency,
+          description
+        },
+        chargeMetaData: {
+          channel: payload.channel ?? "WEB"
+        }
+      },
       merchantCode: client.config.merchantCode,
-      merchantPin: client.config.merchantPin
+      merchantPin: client.config.merchantPin,
+      merchantNumber: client.config.merchantNumber,
+      countryCode: client.config.countryCode,
+      terminalID: client.config.terminalID,
+      location: client.config.location,
+      superMerchantName: client.config.superMerchantName,
+      merchantName: client.config.merchantName
     }
   });
 
@@ -48,14 +66,16 @@ export async function payMerchant(
   const status = normalizePaymentStatus(
     record.status ?? record.transactionStatus ?? record.result ?? (record.success === false ? "failed" : "pending")
   );
-  const providerReference = pickFirstString(record, ["providerReference", "transactionId", "id", "reference"]);
-  const message = pickFirstString(record, ["message", "description", "detail"]);
+  const providerReference = pickFirstString(record, ["transactionId", "providerReference", "id"]);
+  const message = pickFirstString(record, ["statusMessage", "message", "description", "detail"]);
 
   return {
     success: status !== "failed",
     status,
     providerReference,
+    clientCorrelator,
     reference: payload.reference,
+    ecocashReference: providerReference,
     message,
     raw: response.data
   };

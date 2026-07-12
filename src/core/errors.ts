@@ -1,14 +1,14 @@
-export interface BhadharaErrorOptions {
+export interface GauroErrorOptions {
   code: string;
   details?: unknown;
   cause?: unknown;
 }
 
-export class BhadharaError extends Error {
+export class GauroError extends Error {
   public readonly code: string;
   public readonly details?: unknown;
 
-  public constructor(message: string, options: BhadharaErrorOptions) {
+  public constructor(message: string, options: GauroErrorOptions) {
     super(message);
     this.name = this.constructor.name;
     this.code = options.code;
@@ -24,7 +24,7 @@ export class BhadharaError extends Error {
   }
 }
 
-export class AuthenticationError extends BhadharaError {
+export class AuthenticationError extends GauroError {
   public constructor(message = "Authentication failed.", details?: unknown, cause?: unknown) {
     super(message, {
       code: "authentication_error",
@@ -34,7 +34,7 @@ export class AuthenticationError extends BhadharaError {
   }
 }
 
-export class NetworkError extends BhadharaError {
+export class NetworkError extends GauroError {
   public constructor(message = "Network request failed.", details?: unknown, cause?: unknown) {
     super(message, {
       code: "network_error",
@@ -44,7 +44,7 @@ export class NetworkError extends BhadharaError {
   }
 }
 
-export class ProviderError extends BhadharaError {
+export class ProviderError extends GauroError {
   public constructor(message = "Provider request failed.", details?: unknown, cause?: unknown) {
     super(message, {
       code: "provider_error",
@@ -54,7 +54,7 @@ export class ProviderError extends BhadharaError {
   }
 }
 
-export class ValidationError extends BhadharaError {
+export class ValidationError extends GauroError {
   public constructor(message = "Validation failed.", details?: unknown, cause?: unknown) {
     super(message, {
       code: "validation_error",
@@ -64,7 +64,7 @@ export class ValidationError extends BhadharaError {
   }
 }
 
-export class ConfigurationError extends BhadharaError {
+export class ConfigurationError extends GauroError {
   public constructor(message = "Configuration is invalid.", details?: unknown, cause?: unknown) {
     super(message, {
       code: "configuration_error",

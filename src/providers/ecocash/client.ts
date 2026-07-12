@@ -5,7 +5,9 @@ import { getEnvironmentValue } from "../../core/utils.js";
 
 export interface EcoCashEndpoints {
   payMerchant: string;
+  // Template containing `{endUserId}` and `{clientCorrelator}` placeholders, interpolated at request time.
   checkStatus: string;
+  refund: string;
 }
 
 export interface CreateEcoCashOptions extends ProviderHttpOptions {
@@ -13,6 +15,12 @@ export interface CreateEcoCashOptions extends ProviderHttpOptions {
   password?: string;
   merchantCode?: string;
   merchantPin?: string;
+  merchantNumber?: string;
+  terminalID?: string;
+  location?: string;
+  superMerchantName?: string;
+  merchantName?: string;
+  countryCode?: string;
   baseUrl?: string;
   endpoints?: Partial<EcoCashEndpoints>;
   idempotencyHeader?: string;
@@ -24,15 +32,25 @@ export interface ResolvedEcoCashConfig extends ProviderHttpOptions {
   password: string;
   merchantCode: string;
   merchantPin: string;
+  merchantNumber: string;
+  terminalID: string;
+  location: string;
+  superMerchantName: string;
+  merchantName: string;
+  countryCode: string;
   baseUrl: string;
   endpoints: EcoCashEndpoints;
   idempotencyHeader: string;
   defaultHeaders: Record<string, string>;
 }
 
+// Confirmed against the EcoCash Developer Portal's "SDKs & Codegen" and "API Reference" tabs.
+export const ECOCASH_SANDBOX_BASE_URL = "https://developers.ecocash.co.zw/sandbox/payment/v1";
+
 const DEFAULT_ENDPOINTS: EcoCashEndpoints = {
-  payMerchant: "/sandbox/payment/v1/transactions/amount/",
-  checkStatus: "/sandbox/payment/v1/transactions/"
+  payMerchant: "/transactions/amount/",
+  checkStatus: "/{endUserId}/transactions/amount/{clientCorrelator}",
+  refund: "/transactions/refund/"
 };
 
 export class EcoCashClient {
@@ -72,7 +90,13 @@ export function resolveEcoCashConfig(options: CreateEcoCashOptions = {}): Resolv
   const password = options.password ?? getEnvironmentValue("ECOCASH_PASSWORD");
   const merchantCode = options.merchantCode ?? getEnvironmentValue("ECOCASH_MERCHANT");
   const merchantPin = options.merchantPin ?? getEnvironmentValue("ECOCASH_MERCHANT_PIN");
-  const baseUrl = options.baseUrl ?? getEnvironmentValue("ECOCASH_BASE_URL");
+  const merchantNumber = options.merchantNumber ?? getEnvironmentValue("ECOCASH_MERCHANT_NUMBER");
+  const terminalID = options.terminalID ?? getEnvironmentValue("ECOCASH_TERMINAL_ID");
+  const location = options.location ?? getEnvironmentValue("ECOCASH_LOCATION");
+  const superMerchantName = options.superMerchantName ?? getEnvironmentValue("ECOCASH_SUPER_MERCHANT_NAME");
+  const merchantName = options.merchantName ?? getEnvironmentValue("ECOCASH_MERCHANT_NAME");
+  const countryCode = options.countryCode ?? getEnvironmentValue("ECOCASH_COUNTRY_CODE") ?? "ZW";
+  const baseUrl = options.baseUrl ?? getEnvironmentValue("ECOCASH_BASE_URL") ?? ECOCASH_SANDBOX_BASE_URL;
 
   if (!username) {
     throw new ConfigurationError("EcoCash username is required.", {
@@ -98,9 +122,33 @@ export function resolveEcoCashConfig(options: CreateEcoCashOptions = {}): Resolv
     });
   }
 
-  if (!baseUrl) {
-    throw new ConfigurationError("EcoCash baseUrl is required.", {
-      environmentVariable: "ECOCASH_BASE_URL"
+  if (!merchantNumber) {
+    throw new ConfigurationError("EcoCash merchantNumber is required.", {
+      environmentVariable: "ECOCASH_MERCHANT_NUMBER"
+    });
+  }
+
+  if (!terminalID) {
+    throw new ConfigurationError("EcoCash terminalID is required.", {
+      environmentVariable: "ECOCASH_TERMINAL_ID"
+    });
+  }
+
+  if (!location) {
+    throw new ConfigurationError("EcoCash location is required.", {
+      environmentVariable: "ECOCASH_LOCATION"
+    });
+  }
+
+  if (!superMerchantName) {
+    throw new ConfigurationError("EcoCash superMerchantName is required.", {
+      environmentVariable: "ECOCASH_SUPER_MERCHANT_NAME"
+    });
+  }
+
+  if (!merchantName) {
+    throw new ConfigurationError("EcoCash merchantName is required.", {
+      environmentVariable: "ECOCASH_MERCHANT_NAME"
     });
   }
 
@@ -109,6 +157,12 @@ export function resolveEcoCashConfig(options: CreateEcoCashOptions = {}): Resolv
     password,
     merchantCode,
     merchantPin,
+    merchantNumber,
+    terminalID,
+    location,
+    superMerchantName,
+    merchantName,
+    countryCode,
     baseUrl,
     timeoutMs: options.timeoutMs ?? 10_000,
     retries: options.retries ?? 1,

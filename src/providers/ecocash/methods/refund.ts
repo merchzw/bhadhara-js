@@ -1,38 +1,65 @@
 import type { RefundPayload, RefundResponse } from "../../../core/types.js";
-import { isRecord, pickFirstString } from "../../../core/utils.js";
+import {
+  assertRefundPayload,
+  isRecord,
+  normalizePaymentStatus,
+  normalizeZimbabwePhoneNumber,
+  pickFirstString
+} from "../../../core/utils.js";
 import type { EcoCashClient } from "../client.js";
 
 export async function refund(
   client: EcoCashClient,
   payload: RefundPayload
 ): Promise<RefundResponse> {
-  if (!payload.clientCorrelator) {
-    throw new Error("clientCorrelator is required for a refund.");
-  }
+  assertRefundPayload(payload);
 
-  if (!payload.originalEcocashReference) {
-    throw new Error("originalEcocashReference is required for a refund (obtain via checkStatus first).");
-  }
+  const normalizedPhone = normalizeZimbabwePhoneNumber(payload.phone);
+  const currency = payload.currency ?? "USD";
+  const description = payload.description ?? "Refund";
+  const referenceCode = payload.reference ?? payload.clientCorrelator;
 
   const response = await client.request({
     method: "POST",
-    path: "/transactions/refund/",
+    path: client.config.endpoints.refund,
     body: {
       clientCorrelator: payload.clientCorrelator,
+      referenceCode,
+      tranType: "REF",
+      endUserId: normalizedPhone,
       originalEcocashReference: payload.originalEcocashReference,
-      amount: payload.amount,
-      currency: payload.currency ?? "USD",
+      remarks: description,
+      paymentAmount: {
+        charginginformation: {
+          amount: payload.amount,
+          currency,
+          description
+        },
+        chargeMetaData: {
+          channel: payload.channel ?? "WEB"
+        }
+      },
       merchantCode: client.config.merchantCode,
-      merchantPin: client.config.merchantPin
+      merchantPin: client.config.merchantPin,
+      merchantNumber: client.config.merchantNumber,
+      countryCode: client.config.countryCode,
+      terminalID: client.config.terminalID,
+      location: client.config.location,
+      superMerchantName: client.config.superMerchantName,
+      merchantName: client.config.merchantName,
+      currencyCode: currency
     }
   });
 
   const record = isRecord(response.data) ? response.data : {};
-  const ecocashReference = pickFirstString(record, ["ecocashReference", "transactionId", "id"]);
-  const message = pickFirstString(record, ["message", "description", "detail"]);
+  const status = normalizePaymentStatus(
+    record.status ?? record.transactionStatus ?? (record.success === false ? "failed" : undefined)
+  );
+  const ecocashReference = pickFirstString(record, ["transactionId", "ecocashReference", "id"]);
+  const message = pickFirstString(record, ["statusMessage", "message", "description", "detail"]);
 
   return {
-    success: record.success !== false,
+    success: status !== "failed",
     ecocashReference,
     message,
     raw: response.data

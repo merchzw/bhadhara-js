@@ -8,18 +8,20 @@ export interface PaymentPayload {
   currency?: string;
   idempotencyKey?: string;
   notifyUrl?: string;
+  channel?: string;
   metadata?: Record<string, unknown>;
 }
 
 export interface CheckStatusPayload {
-  providerReference?: string;
-  reference?: string;
+  phone: string;
+  clientCorrelator: string;
 }
 
 export interface PaymentResponse {
   success: boolean;
   status: PaymentStatus;
   providerReference?: string;
+  clientCorrelator?: string;
   reference?: string;
   ecocashReference?: string;
   message?: string;
@@ -29,9 +31,12 @@ export interface PaymentResponse {
 export interface RefundPayload {
   clientCorrelator: string;
   originalEcocashReference: string;
+  phone: string;
   amount?: number;
   currency?: string;
-  reason?: string;
+  reference?: string;
+  description?: string;
+  channel?: string;
 }
 
 export interface RefundResponse {
